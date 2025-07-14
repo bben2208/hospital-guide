@@ -17,9 +17,8 @@ export default function SearchPage() {
     if (value.length < 2) return;
   
     try {
-      const res = await fetch(
-        `http://localhost:5500/api/search?q=${value}&hospital=${hospitalId}`
-      );
+        const res = await fetch(`/api/search?q=${value}&hospital=${hospitalId}`);
+
   
       if (!res.ok) {
         const errData = await res.json();
