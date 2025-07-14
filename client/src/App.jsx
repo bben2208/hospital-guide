@@ -8,9 +8,9 @@ function App() {
   return (
     <div className="App">
       <Routes>
-       
-        <Route path="/hospitals" element={<HospitalList />} />
-        <Route path="/search/:hospitalId" element={<SearchPage />} />
+      <Route path="/" element={<HospitalList />} />  
+  <Route path="/hospitals" element={<HospitalList />} />
+  <Route path="/search/:hospitalId" element={<SearchPage />} />
       </Routes>
     </div>
   );
