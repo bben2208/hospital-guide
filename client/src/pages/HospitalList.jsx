@@ -4,6 +4,7 @@ const hospitals = [
   { id: 1, name: "Eastbourne Hospital" },
   { id: 2, name: "Conquest Hospital" },
   { id: 3, name: "Royal Sussex County Hospital" },
+  { id: 4, name: "Queen Victoria Hospital (East Grinstead)" }
 ];
 
 export default function HospitalList() {

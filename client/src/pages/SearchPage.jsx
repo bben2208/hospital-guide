@@ -1,4 +1,4 @@
-//SearchPage.jsx
+// SearchPage.jsx
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
 import { api } from "../lib/api";
@@ -9,46 +9,51 @@ export default function SearchPage() {
   const [results, setResults] = useState([]);
   const [error, setError] = useState("");
 
- // SearchPage.jsx (csak a handleSearch elejét mutatom)
-const handleSearch = async (e) => {
-  const value = e.target.value.toLowerCase();
-  setQuery(value);
-  setError("");
-  setResults([]);
+  const handleSearch = async (e) => {
+    const value = e.target.value.toLowerCase();
+    setQuery(value);
+    setError("");
+    setResults([]);
 
+    if (value.trim().length < 2) return;
 
-  if (value.trim().length < 2) return;
+    const cleanHospitalId = String(hospitalId || "").match(/\d+/)?.[0] || "";
 
-  // 🔧 tisztított hospitalId: csak az első számcsoportot engedjük
-  const cleanHospitalId = String(hospitalId || "").match(/\d+/)?.[0] || "";
+    try {
+      const url = `/api/search?q=${encodeURIComponent(
+        value
+      )}&hospital=${encodeURIComponent(cleanHospitalId)}`;
+      const res = await api(url);
 
-  try {
-    const url = `/api/search?q=${encodeURIComponent(value)}&hospital=${encodeURIComponent(cleanHospitalId)}`;
-    const res = await api(url);
-    if (!res.ok) {
-      const text = await res.text();
-      let message = `Server error (${res.status})`;
-      try {
-        const maybeJson = JSON.parse(text);
-        if (maybeJson?.message) message = maybeJson.message;
-      } catch {}
-      setError(message);
-      return;
+      if (!res.ok) {
+        const text = await res.text();
+        let message = `Server error (${res.status})`;
+        try {
+          const maybeJson = JSON.parse(text);
+          if (maybeJson?.message) message = maybeJson.message;
+        } catch {}
+        setError(message);
+        return;
+      }
+
+      const ct = res.headers.get("content-type") || "";
+      if (!ct.includes("application/json")) {
+        const text = await res.text();
+        throw new Error(
+          `Expected JSON, got: ${ct || "unknown"} — preview: ${text.slice(
+            0,
+            80
+          )}...`
+        );
+      }
+
+      const data = await res.json();
+      setResults(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("❌ Error:", err);
+      setError("Server error. Please try again.");
     }
-
-    const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("application/json")) {
-      const text = await res.text();
-      throw new Error(`Expected JSON, got: ${ct || "unknown"} — preview: ${text.slice(0, 80)}...`);
-    }
-
-    const data = await res.json();
-    setResults(Array.isArray(data) ? data : []);
-  } catch (err) {
-    console.error("❌ Error:", err);
-    setError("Server error. Please try again.");
-  }
-};
+  };
 
   return (
     <div
@@ -84,9 +89,30 @@ const handleSearch = async (e) => {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <ul style={{ marginTop: "1rem", padding: "1rem", width: "100%", maxWidth: 500 }}>
-        {results.map((item, i) => (
-          <li
+      <ul
+        style={{
+          marginTop: "1rem",
+          padding: "1rem",
+          width: "100%",
+          maxWidth: 500,
+        }}
+      >
+        {results.map((item, i) => {
+          // 🔍 Normalise building/location (empty string -> "")
+          const building = (item.building ?? "").toString().trim();
+          const location = (item.location ?? "").toString().trim();
+
+          let buildingLocationText = "";
+          if (building && location) {
+            buildingLocationText = `${building} — Location ${location}`;
+          } else if (building) {
+            buildingLocationText = building;
+          } else if (location) {
+            buildingLocationText = `Location ${location}`;
+          }
+
+          return (
+            <li
             key={i}
             style={{
               listStyle: "none",
@@ -100,27 +126,48 @@ const handleSearch = async (e) => {
           >
             <strong style={{ fontSize: "1.1rem" }}>{item.name}</strong>
             <br />
-            {item.bestEntrance && (
+          
+            {/* FLOOR (for other hospitals) */}
+            {item.floor && (
               <>
-                <span>Best entrance: {item.bestEntrance}</span>
+                <span>Floor: {item.floor}</span>
                 <br />
               </>
             )}
-            <span>Floor: {item.floor || "—"}</span>
+          
+            {/* AREA COLOR */}
+            {item.areaColor && (
+              <>
+                <span>
+                  Area:{" "}
+                  <span
+                    style={{
+                      color: item.areaColor.toLowerCase(),
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {item.areaColor}
+                  </span>
+                </span>
+                <br />
+              </>
+            )}
+          
+            {/* 🔥 ALWAYS SHOW BUILDING */}
+            <span>Building: {item.building || "—"}</span>
             <br />
-            <span>
-              Area:{" "}
-              <span
-                style={{
-                  color: (item.areaColor || "").toLowerCase(),
-                  fontWeight: "bold",
-                }}
-              >
-                {item.areaColor || "—"}
-              </span>
-            </span>
+          
+            {/* 🔥 ONLY SHOW LOCATION IF NOT EMPTY */}
+            {item.location?.trim() !== "" && (
+              <>
+                <span>Location: {item.location}</span>
+                <br />
+              </>
+            )}
           </li>
-        ))}
+          
+          );
+        })}
       </ul>
 
       <Link

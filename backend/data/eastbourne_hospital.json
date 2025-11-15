@@ -8,6 +8,7 @@
     { "name": "Aquatic Physiotherapy Pool", "floor": "Level 1", "areaColor": "Green" },
     { "name": "Outpatients D", "floor": "Level 1", "areaColor": "Green" },
     { "name": "Outpatients E", "floor": "Level 1", "areaColor": "Green" },
+    { "name": "Discharge Lounge", "floor": "Level 1", "areaColor": "Purple" },
     { "name": "Scott Unit", "floor": "Level 1", "areaColor": "Green" }
   ],
 
