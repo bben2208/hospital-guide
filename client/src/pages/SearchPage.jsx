@@ -5,6 +5,12 @@ import { api } from "../lib/api";
 
 export default function SearchPage() {
   const { hospitalId } = useParams();
+
+  // 🔍 Clean ID + QVH flag (used everywhere)
+  const cleanHospitalId =
+    String(hospitalId || "").match(/\d+/)?.[0] || "";
+  const isQVH = cleanHospitalId === "4";
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [error, setError] = useState("");
@@ -16,8 +22,6 @@ export default function SearchPage() {
     setResults([]);
 
     if (value.trim().length < 2) return;
-
-    const cleanHospitalId = String(hospitalId || "").match(/\d+/)?.[0] || "";
 
     try {
       const url = `/api/search?q=${encodeURIComponent(
@@ -69,7 +73,9 @@ export default function SearchPage() {
         textAlign: "center",
       }}
     >
-      <h1 style={{ marginBottom: "1.5rem" }}>What are you looking for? 🏥</h1>
+      <h1 style={{ marginBottom: "1.5rem" }}>
+        What are you looking for? 🏥
+      </h1>
 
       <input
         type="text"
@@ -98,74 +104,81 @@ export default function SearchPage() {
         }}
       >
         {results.map((item, i) => {
-          // 🔍 Normalise building/location (empty string -> "")
-          const building = (item.building ?? "").toString().trim();
-          const location = (item.location ?? "").toString().trim();
-
+          // 🔧 Building + Location – only meaningful for QVH
           let buildingLocationText = "";
-          if (building && location) {
-            buildingLocationText = `${building} — Location ${location}`;
-          } else if (building) {
-            buildingLocationText = building;
-          } else if (location) {
-            buildingLocationText = `Location ${location}`;
+          if (isQVH) {
+            const building = (item.building ?? "").toString().trim();
+            const location = (item.location ?? "").toString().trim();
+
+            if (building && location) {
+              buildingLocationText = `${building} — Location ${location}`;
+            } else if (building) {
+              buildingLocationText = building;
+            } else if (location) {
+              buildingLocationText = `Location ${location}`;
+            }
           }
 
           return (
             <li
-            key={i}
-            style={{
-              listStyle: "none",
-              background: "#ffffff",
-              padding: "1rem",
-              borderRadius: "10px",
-              marginBottom: "1rem",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              textAlign: "left",
-            }}
-          >
-            <strong style={{ fontSize: "1.1rem" }}>{item.name}</strong>
-            <br />
-          
-            {/* FLOOR (for other hospitals) */}
-            {item.floor && (
-              <>
-                <span>Floor: {item.floor}</span>
-                <br />
-              </>
-            )}
-          
-            {/* AREA COLOR */}
-            {item.areaColor && (
-              <>
-                <span>
-                  Area:{" "}
-                  <span
-                    style={{
-                      color: item.areaColor.toLowerCase(),
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {item.areaColor}
+              key={i}
+              style={{
+                listStyle: "none",
+                background: "#ffffff",
+                padding: "1rem",
+                borderRadius: "10px",
+                marginBottom: "1rem",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                textAlign: "left",
+              }}
+            >
+              <strong style={{ fontSize: "1.1rem" }}>
+                {item.name}
+              </strong>
+              <br />
+
+              {/* FLOOR – EDGH / Conquest / RSCH */}
+              {item.floor && (
+                <>
+                  <span>Floor: {item.floor}</span>
+                  <br />
+                </>
+              )}
+
+              {/* AREA COLOR */}
+              {item.areaColor && (
+                <>
+                  <span>
+                    Area:{" "}
+                    <span
+                      style={{
+                        color: item.areaColor.toLowerCase(),
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {item.areaColor}
+                    </span>
                   </span>
-                </span>
-                <br />
-              </>
-            )}
-          
-            {/* 🔥 ALWAYS SHOW BUILDING */}
-            <span>Building: {item.building || "—"}</span>
-            <br />
-          
-            {/* 🔥 ONLY SHOW LOCATION IF NOT EMPTY */}
-            {item.location?.trim() !== "" && (
-              <>
-                <span>Location: {item.location}</span>
-                <br />
-              </>
-            )}
-          </li>
-          
+                  <br />
+                </>
+              )}
+
+              {/* BEST ENTRANCE – Conquest / Eastbourne stb. */}
+              {item.bestEntrance && (
+                <>
+                  <span>Best entrance: {item.bestEntrance}</span>
+                  <br />
+                </>
+              )}
+
+              {/* BUILDING + LOCATION – csak QVH (id 4) esetén */}
+              {isQVH && buildingLocationText && (
+                <>
+                  <span>{buildingLocationText}</span>
+                  <br />
+                </>
+              )}
+            </li>
           );
         })}
       </ul>
